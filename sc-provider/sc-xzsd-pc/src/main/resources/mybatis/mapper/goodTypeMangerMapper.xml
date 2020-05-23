@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.pc.goodTypeManger.goodsTypeDao.goodMangerDao">
+
+    <!--统计用户账号数量-->
+    <select id="counttypemanger" parameterType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity" resultType="int">
+        select count(cate_name)
+        from
+        t_sku_classified
+        where
+        is_deleted = 0
+        and
+        cate_name = #{cateName}
+    </select>
+
+    <!--新增一级分类-->
+    <insert id="addFirstClass1" parameterType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity">
+        insert into t_sku_classified
+        (
+        cate_code,
+         cate_name,
+         remark,
+         level,
+         cate_parent,
+         is_deleted,
+         create_time,
+         create_by,
+         gmt_modified,
+         last_modified_by,
+         version)
+        values
+           (#{cateCode},
+           #{cateName},
+            #{remark},
+            1,
+            0,
+            #{is_deleted},
+            now(),
+            #{create_by},
+            now(),
+            #{last_modified_by},
+            0)
+    </insert>
+
+    <!--新增二级分类-->
+    <insert id="addSecondClass2" parameterType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity">
+        insert into t_sku_classified
+        (
+         cate_code,
+         cate_name,
+         remark,
+         level,
+         cate_parent,
+         is_deleted,
+         create_time,
+         create_by,
+         gmt_modified,
+         last_modified_by,
+         version)
+        values
+           (
+            #{cateCode},
+            #{cateName},
+            #{remark},
+            2,
+            #{cateParent},
+            #{is_deleted},
+            now(),
+            #{create_by},
+            now(),
+            #{last_modified_by},
+            0)
+    </insert>
+
+    <!--删除分类信息-->
+    <update id="deleteGoodClass" parameterType="java.lang.String">
+                update t_sku_classified
+                set
+                is_deleted = 1,
+                gmt_modified = now(),
+                last_modified_by   = #{cateCode},
+                version = version + 1
+                where cate_code = #{cateCode}
+        </update>
+
+    <!--修改分类信息-->
+    <update id="updateGoodClass" parameterType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity">
+        update t_sku_classified
+        set
+            cate_code       = #{cateCode},
+            cate_name       = #{cateName},
+            remark         = #{remark},
+            gmt_modified = now(),
+            version      = version + 1
+        where
+            cate_code = #{cateCode}
+        and
+            version = #{version}
+    </update>
+
+    <!--分类信息详情查询-->
+    <select id="queryGoodClass" parameterType="java.lang.String" resultType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity">
+         select
+         cate_name cateName,
+         remark remark
+        from
+        t_sku_classified
+        where
+        cate_code = #{cateCode}
+        and
+        is_deleted = 0
+    </select>
+
+    <!--统计分类编号-->
+    <select id="countType" parameterType="java.lang.String" resultType="int">
+        select count(cate_code)
+        from
+        t_sku_classified
+        where
+        is_deleted = 0
+        and
+        cate_code = #{cateCode}
+    </select>
+
+    <!-- 一级分类列表查询-->
+    <select id="queryGoodClassList1" parameterType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity" resultType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity">
+        select
+        cate_code cateCode,
+        cate_name cateName
+        from
+        t_sku_classified
+        where
+        is_deleted = 0
+        and
+        level = 1
+        </select>
+
+    <!-- 二级分类列表查询-->
+    <select id="queryGoodClassList2" parameterType="java.lang.String" resultType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.goodMangerEntity">
+        select
+        cate_code cateCode,
+        cate_name cateName
+        from
+        t_sku_classified
+        where
+        is_deleted = 0
+        and
+        cate_parent = #{cateCode}
+        </select>
+    <!--商品列表查询-->
+
+    <select id="queryGoodClassList" parameterType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.GoodClassificationEntity"  resultType="com.xzsd.pc.goodTypeManger.goodsTypeEntity.GoodClassificationEntity">
+      select
+          a.cate_code classCode,
+          a.cate_name className,
+          a.level classRank,
+          a.version version,
+          a.cate_parent firstClassCode
+      from
+          t_sku_classified a
+      where
+          is_deleted = 0
+      order by create_time desc
+    </select>
+</mapper>

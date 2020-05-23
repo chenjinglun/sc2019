@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xzsd.app.updateInvitation.dao.UpdateDao">
+
+    <!--判断邀请码是否存在-->
+    <select id="ExistInvest" parameterType="com.xzsd.app.updateInvitation.dao.UpdateDao" resultType="int">
+        select
+            count(*)
+        from
+            t_store_information
+        where
+            store_invitation = #{invitation}
+        and
+            is_deleted = 0
+    </select>
+
+    <!--修改用户门店邀请码-->
+    <update id="updateCode" parameterType="com.xzsd.app.updateInvitation.entity.UpdateEntity">
+        UPDATE
+          t_customer
+        SET
+          store_invitation = #{invitation},
+          gmt_modified = now(),
+          last_modified_by   = #{userCode},
+            version      = version + 1
+        WHERE
+          user_code = #{userCode}
+    </update>
+
+</mapper>

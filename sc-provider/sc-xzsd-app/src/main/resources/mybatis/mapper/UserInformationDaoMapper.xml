@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.app.userInformation.dao.UserInformationDao">
+
+    <select id="getUserRole" parameterType="java.lang.String" resultType="int">
+        SELECT
+            role
+        FROM
+            t_user_management
+        WHERE
+            user_code = #{userCode}
+    </select>
+
+    <select id="getInvitation" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT
+            store_invitation
+        FROM
+            t_customer
+        WHERE
+            user_code = #{userCode}
+    </select>
+
+    <select id="getUserIsCustomer" parameterType="java.lang.String" resultType="com.xzsd.app.userInformation.entity.AppUserInfo">
+        SELECT
+            a.user_name userName,
+            b.store_no storeId,
+            b.store_name storeName,
+            b.store_address address,
+            c.store_invitation inId,
+            a.phone phone,
+            a.role role,
+            a.image pictureUrl,
+            a.version version
+        FROM
+            t_user_management a,t_store_information b, t_customer c
+        WHERE
+            a.user_code=c.user_code
+            and
+            c.store_invitation=b.store_invitation
+            and
+            a.user_code=#{userCode}
+    </select>
+
+    <select id="getUserIsCustomer2" parameterType="java.lang.String" resultType="com.xzsd.app.userInformation.entity.AppUserInfo">
+        SELECT
+            a.user_name userName,
+            a.phone phone,
+            a.role role,
+            a.image pictureUrl,
+            a.version version
+        FROM
+            t_user_management a
+        WHERE a.user_code=#{userCode}
+    </select>
+
+
+    <select id="getUserIsDriver" parameterType="java.lang.String" resultType="com.xzsd.app.userInformation.entity.AppUserInfo">
+        SELECT
+            a.user_name userName,
+            c.driver_name ,
+            a.phone phone,
+            a.role role,
+            a.image pictureUrl,
+            a.version version
+        FROM
+            t_user_management a,
+            t_driver c
+        WHERE
+            a.user_code = c.driver_no
+            AND a.user_code = #{userCode}
+    </select>
+
+
+    <select id="getUserIsStore" parameterType="java.lang.String" resultType="com.xzsd.app.userInformation.entity.AppUserInfo">
+        SELECT
+            a.user_name userName,
+            a.user_code userCode,
+            b.store_no storeId,
+            b.store_name storeName,
+            b.store_address address,
+            b.store_invitation inId,
+            a.phone phone,
+            a.email email,
+            a.role role,
+            a.image pictureUrl,
+            a.version version
+        FROM
+            t_user_management a,
+            t_store_information b
+        WHERE
+            a.user_code = b.user_code
+            AND a.user_code = #{userCode}
+    </select>
+
+    <select id="getUserIsAdmin" parameterType="java.lang.String" resultType="com.xzsd.app.userInformation.entity.AppUserInfo">
+        SELECT
+            a.user_name userName,
+            a.phone phone,
+            a.role role,
+            a.image pictureUrl,
+            a.version version
+        FROM
+            t_user_management a
+        WHERE
+            a.user_code = #{userCode}
+    </select>
+
+    <select id="getPassword" parameterType="java.lang.String" resultType="java.lang.String">
+        select user_pwd
+        from
+        t_user_management
+        where
+        user_code = #{userCode}
+    </select>
+
+    <update id="updateUserPassword" parameterType="java.lang.String">
+        update t_user_management
+        set user_pwd=#{userNewPassword},
+        version=version+1
+        where user_code = #{userCode}
+    </update>
+
+    <!--查询原来的密码-用户店长表 或者 司机表-->
+    <select id="getOrignPass" parameterType="com.xzsd.app.userInformation.entity.PasswordEntity" resultType="com.xzsd.app.userInformation.entity.PasswordEntity">
+        <if test="Role == 2">
+            select
+            user.user_pwd userNewPass
+            from
+            t_user_management user
+            where
+            user.is_deleted = 0
+            and
+            user.user_code = #{userCode}
+        </if>
+        <if test="Role == 3">
+            select
+            user.user_pwd userNewPass
+            from
+            t_user_management user
+            where
+            user.is_deleted = 0
+            and
+            user.user_code = #{userCode}
+        </if>
+        <if test="Role == 4">
+            select
+            driver.driver_Pwd driverPass
+            from
+            t_driver driver
+            and
+            driver.is_deleted = 0
+            and
+            driver.driver_no = #{userCode}
+        </if>
+    </select>
+
+    <!--更新密码-->
+    <update id="updatePassWord" parameterType="com.xzsd.app.userInformation.entity.PasswordEntity">
+        <if test="Role == 2 or Role == 3">
+            update
+            t_user_management
+            set
+            user_pwd = #{cinPass}
+            where
+            user_code = #{userCode}
+            and
+            is_deleted = 0
+        </if>
+        <if test="Role == 4">
+            update
+            t_driver
+            set
+            driver_Pwd = #{cinPass}
+            where
+            driver_no = #{userCode}
+            and
+            is_deleted = 0
+        </if>
+    </update>
+
+    <!--查询用户信息-->
+    <select id="queryCurrUser" parameterType="com.xzsd.app.userInformation.entity.UserEntity" resultType="com.xzsd.app.userInformation.entity.UserEntity">
+        select
+            user_code userCode,
+            role userRole
+        from
+            t_user_management
+        where
+            user_code = #{userCode}
+        and
+            is_deleted = 0
+    </select>
+</mapper>

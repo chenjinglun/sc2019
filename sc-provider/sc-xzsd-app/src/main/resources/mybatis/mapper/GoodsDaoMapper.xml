@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xzsd.app.goods.dao.GoodsDao">
+
+    <!--app端商品详情页的商品详情-->
+    <select id="queryGoodDetail" parameterType="java.lang.String" resultType="com.xzsd.app.goods.entity.GoodsDetailEntity">
+        select
+            a.sku_name             goodsName,
+            a.book_no              bookNo,
+            a.sku_detail           skudetail,
+            a.selling_price        sellingPrice,
+            a.image_code           imageCode,
+            a.author_name          AuthorName,
+            a.sku_press            skuPress,
+            a.order_eva_rank       orderRank,
+            b.store_name           storeName
+        from
+            t_sku_information a,t_store_information b
+        where
+             a.is_deleted = 0
+        and
+            a.user_code=b.user_code
+        and
+            sku_no = #{goodsCode}
+    </select>
+
+    <!--查询商品评价列表-->
+    <select id="listGoodsEvaluates" parameterType="com.xzsd.app.goods.entity.GoodsEvaEntity" resultType="com.xzsd.app.goods.entity.GoodsEVAReturnEntity">
+        select
+        b.user_acct userAcct,
+        a.star_level startLevel,
+        a.appraise_info Content,
+        a.create_time evaTime
+        from
+        t_order_eval a,
+        t_user_management b
+        where
+        a.user_code = b.user_code
+        and
+        a.is_deleted = 0
+        and
+        a.sku_no = #{goodsCode}
+        <if test="startLevel == 1">
+            and (  a.star_level &gt;= 0 and  a.star_level &lt;= 2)
+        </if>
+        <if test="startLevel == 2">
+            and (  a.star_level &gt; 2 and  a.star_level &lt;= 3)
+        </if>
+        <if test="startLevel == 3">
+            and (  a.star_level &gt; 3 and  a.star_level &lt;= 5)
+        </if>
+    </select>
+
+    <!-- 二级分类列表查询-->
+    <select id="queryGoodClassList2" parameterType="java.lang.String" resultType="com.xzsd.app.goods.entity.GoodClassificationSonEntity">
+      select
+        b.sku_no    goodsCode,
+        b.sku_name  goodsName,
+        b.image_code imageCode,
+        b.selling_price sellingPrice
+        from
+        t_sku_information b
+        where
+        b.is_deleted = 0
+		and
+		b.two_cate_code = #{cateCode}
+        </select>
+
+    <!-- 二级分类列表查询-->
+    <select id="querySecond" parameterType="java.lang.String" resultType="com.xzsd.app.goods.entity.ClassifiyEntity">
+        select
+        cate_code classCode,
+        cate_name className
+        from
+        t_sku_classified
+        where
+        is_deleted = 0
+        and
+        cate_parent = #{cateCode}
+     </select>
+</mapper>

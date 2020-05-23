@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.pc.customerquery.Dao.CustomerDao">
+    <!--客户列表-->
+    <select id="queryCustomer" parameterType="com.xzsd.pc.customerquery.Entity.CustomerEntity" resultType="com.xzsd.pc.customerquery.Entity.CustomerEntity">
+            select
+            user_name userName,
+            user_acct userAcct,
+            id_card idCard,
+            sex sex,
+            phone phone,
+            email email
+            from
+            t_customer,t_user_management
+            where
+            t_customer.is_deleted = 0
+            and
+            t_user_management.is_deleted = 0
+            and
+            t_customer.user_code = t_user_management.user_code
+        <if test="userAcct != null and userAcct != ''">
+            and user_acct like concat('%', #{userAcct}, '%')
+        </if>
+        <if test="userName != null and userName != ''">
+            and user_name like concat('%', #{userName}, '%')
+        </if>
+    </select>
+
+    <select id="listCustomerByRole" parameterType="com.xzsd.pc.customerquery.Entity.CustomerEntity" resultType="com.xzsd.pc.customerquery.Entity.CustomerEntity">
+
+        SELECT
+        a.user_name userName,
+        a.user_acct userAcct,
+        a.id_card idCard,
+        a.sex sex,
+        a.phone phone,
+        a.email email
+        FROM
+        t_user_management a,
+        t_customer b,
+        t_store_information c
+        WHERE
+        a.is_deleted = 0
+        AND a.user_code = b.user_code
+        AND b.store_invitation = c.store_invitation
+        AND c.user_code = #{userCode}
+        <if test="userName != null and userName != ''">
+            and a.user_name like concat('%', #{userName}, '%')
+        </if>
+        <if test="userAcct != null and userAcct != ''">
+            and a.user_acct like concat('%', #{userAcct}, '%')
+        </if>
+    </select>
+</mapper>

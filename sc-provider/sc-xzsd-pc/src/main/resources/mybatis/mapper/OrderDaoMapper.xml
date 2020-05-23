@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.pc.orderManger.Dao.OrderDao">
+
+    <!--订单详情信息查询-->
+    <select id="queryOrderDetail" parameterType="java.lang.String" resultType="com.xzsd.pc.orderManger.Entity.OrderDetailEntity">
+        select
+             a.order_no orderId,
+             a.sku_no goodsId,
+             b.sku_name goodsName,
+             b.cost_price costPrice,
+             b.selling_price salesPrice,
+             a.goods_cnt num,
+			 c.user_code userCode,
+			 c.payment_money totalMoney
+        FROM
+            t_order_details a,t_sku_information b,t_order_management c
+        WHERE
+            a.is_deleted = 0
+		and a.sku_no=b.sku_no
+		and c.order_no = a.order_no
+        and a.order_no = #{orderId}
+        ORDER BY
+        a.order_de_no DESC
+    </select>
+
+    <!--修改订单状态-->
+    <update id="updateOrderState" parameterType="java.lang.String">
+        update t_order_management
+        set
+        gmt_modified   = now(),
+        order_status   = #{orderStatus},
+        version = version + 1
+        where
+        order_no in
+        <foreach item="item" index="index" collection="listCode" open="(" separator="," close=")">
+            #{item}
+        </foreach> and is_deleted=0
+    </update>
+
+    <!--订单分页查询-->
+    <select id="queryOrderList" parameterType="com.xzsd.pc.orderManger.Entity.OrderMangerEntity" resultType="com.xzsd.pc.orderManger.Entity.OrderMangerEntity">
+
+        select
+        a.order_no           oderNo,
+        a.payment_money      payMoney,
+        a.order_status       orderStatus,
+        a.receiver_no        receiverNo,
+        b.phone              phone,
+        a.user_code          userCode,
+        b.user_name          userName,
+        a.pay_status         payStatus,
+        a.create_time        paytime
+        FROM
+        t_order_management a
+        JOIN t_user_management b ON a.user_code = b.user_code
+        where a.is_deleted = 0
+        <if test="orderStatus != null and orderStatus != ''">
+            and a.order_status like concat('%', #{orderStatus}, '%')
+        </if>
+        <if test="oderNo != null and oderNo != ''">
+            and a.order_no like concat('%', #{oderNo}, '%')
+        </if>
+        <if test="phone != null and phone != ''">
+            and b.phone like concat('%', #{phone}, '%')
+        </if>
+        <if test="role != null and role != ''">
+            and b.role like concat('%', #{role}, '%')
+        </if>
+        <if test="payTimeStart != null and payTimeStart != ''">
+            <if test="payTimeEnd != null and payTimeEnd != ''">
+                and a.pay_time between #{payTimeStart} and #{payTimeEnd}
+            </if>
+        </if>
+        order by pay_time desc
+    </select>
+
+</mapper>

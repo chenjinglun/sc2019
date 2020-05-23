@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.pc.province.Dao.AreaDao">
+    <!--省列表-->
+    <select id="queryProvince" parameterType="com.xzsd.pc.province.Entity.AreaEntity" resultType="com.xzsd.pc.province.Entity.AreaEntity">
+        select
+        dict_no dictNo ,
+        dict_name dictName
+        from
+        t_dictionary
+        where
+        dict_code=0 and dict_no != 0
+    </select>
+
+    <!--市列表-->
+    <select id="queryCity" parameterType="java.lang.Integer" resultType="com.xzsd.pc.province.Entity.AreaEntity">
+        select
+        dict_name dictName,
+        dict_no dictNo
+        from
+        t_dictionary
+        where
+        dict_code=#{dictCode}
+    </select>
+
+    <!--区/县列表-->
+    <select id="queryCounty" parameterType="java.lang.Integer" resultType="com.xzsd.pc.province.Entity.AreaEntity">
+        select
+        dict_name dictName,
+        dict_no dictNo
+        from
+        t_dictionary
+        where
+        dict_code=#{dictCode}
+    </select>
+</mapper>

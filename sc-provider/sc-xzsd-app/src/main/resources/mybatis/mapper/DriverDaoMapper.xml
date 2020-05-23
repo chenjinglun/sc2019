@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xzsd.app.driver.dao.DriverDao">
+
+    <!--司机负责运送的区域查询-->
+    <select id="queryArea" parameterType="java.lang.String" resultType="com.xzsd.app.driver.entity.DriverEntity" >
+        select
+            province_no provinceCode,
+            city_no cityCode,
+            county_no countyCode
+        from
+            t_driver
+        where
+            driver_no = #{DriverCode}
+    </select>
+    <!--司机负责运送的区域查询-->
+    <select id="queryStore" parameterType="com.xzsd.app.driver.entity.DriverEntity" resultType="com.xzsd.app.driver.entity.DriverListOutEntity" >
+        select
+            a.store_no       storeCode,
+            a.store_name     storeName,
+            a.store_address  storeAddress,
+            b.user_name      userName,
+            b.phone          userPhone
+        from
+            t_store_information a, t_user_management b
+        where
+            a.province_no = #{provinceCode}
+        and
+            a.city_no     = #{cityCode}
+        and
+            a.county_no   = #{countyCode}
+        and
+            a.user_code   = b.user_code
+    </select>
+
+    <!--门店所在区域-->
+    <select id="queryArea2" parameterType="java.lang.String" resultType="com.xzsd.app.driver.entity.DriverEntity" >
+        select
+            province_no provinceCode,
+            city_no cityCode,
+            county_no countyCode
+        from
+            t_store_information
+        where
+            user_code= #{userCode}
+    </select>
+
+    <!--店长门下司机-->
+    <select id="queryStore2" parameterType="com.xzsd.app.driver.entity.DriverEntity" resultType="com.xzsd.app.driver.entity.StoreOutEntity" >
+        select
+            a.driver_name       userNmae,
+            a.driver_phone     phone
+        from
+            t_driver a
+        where
+            a.province_no = #{provinceCode}
+        and
+            a.city_no     = #{cityCode}
+        and
+            a.county_no   = #{countyCode}
+    </select>
+
+</mapper>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.app.StorerOrder.dao.StOrDao">
+    <update id="updateState" parameterType="com.xzsd.app.StorerOrder.entity.updateStateEntity">
+        update
+            t_order_management
+        set
+            order_status = #{orderState},
+            gmt_modified = now()
+        where
+            is_deleted = 0
+        and
+            order_no = #{orderCode}
+    </update>
+
+    <!--店长订单列表查询-->
+    <select id="listManagerOrders" parameterType="com.xzsd.app.StorerOrder.entity.StOrForListEntity" resultMap="queryStoreOrderList">
+           select
+              a.order_no orderCode,
+              a.order_status orderState,
+              a.payment_money  payMoney,
+              c.user_name userName,
+              c.phone userPhone
+          from
+              t_order_management a,
+              t_user_management c,
+              t_store_information b,
+			  t_customer d
+          where
+              b.user_code = #{userCode}
+		 and
+			 d.store_invitation = b.store_invitation
+         and
+             d.user_code = a.user_code
+		 and
+			 a.user_code = c.user_code
+    </select>
+
+    <!--查询用户订单列表详情-->
+    <select id="queryStoreOrderListListUnit" parameterType="com.xzsd.app.StorerOrder.entity.StOrForListEntity" resultType="com.xzsd.app.StorerOrder.entity.StOrListAllEntity">
+            select
+              torderg.sku_no goodsCode,
+              a.sku_name goodsName,
+              a.image_code imageUrl,
+              a.selling_price goodsSale,
+              a.sku_detail goodPrec,
+              torderg.goods_cnt goodsNum,
+              torderg.goods_image goodsImage
+          from
+              t_order_details torderg , t_sku_information a
+          where
+              torderg.order_no = #{orderCode}
+          and
+              torderg.is_deleted = 0
+         and
+              a.sku_no = torderg.sku_no
+    </select>
+
+    <!--店长订单列表查询ResultMap-->
+    <resultMap id="queryStoreOrderList" type="com.xzsd.app.StorerOrder.entity.StOrListEntity">
+        <collection property="orderGoodList" javaType="list"  column="orderCode=orderCode"  select="queryStoreOrderListListUnit" ofType="com.xzsd.app.StorerOrder.entity.StOrListAllEntity">
+        </collection>
+    </resultMap>
+
+    <!--订单详情查询-->
+    <select id="queryshopOwnerOrderDetail" parameterType="com.xzsd.app.StorerOrder.entity.OrderDetailEntity" resultMap="queryStoreOrderDetail">
+          select
+              torder.order_no          orderCode,
+              tstore.store_address        Address,
+              tstore.store_name         deliveryStore,
+              torder.create_time         orderCreateTime,
+              torder.order_status         orderState,
+              tuser.user_name            userName,
+              tuser.phone           userPhone
+          from
+              t_order_management torder,
+              t_user_management tuser,
+              t_store_information tstore,
+              t_customer           tcust
+         where
+              torder.order_no = #{orderCode}
+        and
+              torder.is_deleted = 0
+        and
+              tcust.user_code = torder.user_code
+        and
+              tcust.store_invitation = tstore.store_invitation
+        and
+              torder.user_code = tuser.user_code
+    </select>
+    <!--订单商品详情列表-->
+    <select id="goodDetailList" parameterType="com.xzsd.app.StorerOrder.entity.OrderDetailEntity" resultType="com.xzsd.app.StorerOrder.entity.OrderDetailGoodsListEntity">
+          select
+             a.sku_no         goodsCode,
+             b.sku_name       goodsName,
+             b.selling_price  goodsSale,
+             b.sku_detail     goodsPrec,
+             a.goods_cnt      goodsNum,
+             b.image_code     goodsImage
+          from
+              t_order_details a , t_sku_information b
+          where
+              a.order_no = #{orderCode}
+          and
+              a.is_deleted = 0
+          and
+              a.sku_no = b.sku_no
+    </select>
+    <!--订单详情映射-->
+    <resultMap id="queryStoreOrderDetail" type="com.xzsd.app.StorerOrder.entity.OrderDetailEntity">
+        <collection property="orderGoodsList" javaType="list"  column="orderCode=orderCode"  select="goodDetailList" ofType="com.xzsd.app.StorerOrder.entity.OrderDetailGoodsListEntity">
+        </collection>
+    </resultMap>
+</mapper>

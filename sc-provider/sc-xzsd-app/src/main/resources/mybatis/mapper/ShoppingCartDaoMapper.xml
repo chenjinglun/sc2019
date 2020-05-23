@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xzsd.app.shoppingCart.dao.ShoppingCartDao">
+
+    <!--查询该商品库存数量-->
+    <select id="stock" parameterType="java.lang.String" resultType="int">
+        select
+            stock
+        from
+            t_sku_information
+        where
+            sku_no = #{goodsCode}
+    </select>
+
+    <!--新增购物车-->
+    <insert id="addShoppingCart" parameterType="com.xzsd.app.shoppingCart.entity.AddShoppingcartEntity">
+        INSERT
+            INTO
+              `t_shopping_cart`(
+                `shipping_no`,
+                `user_code`,
+                `sku_no`,
+                `cnt`,
+                `create_time`,
+                `create_by`,
+                `is_deleted`,
+                `version`
+              )
+            VALUES(
+                  #{cartCode},
+                  #{userCode},
+                  #{goodsCode},
+                  #{cnt},
+                  now(),
+                  #{userCode},
+                  0,
+                  0
+            )
+    </insert>
+
+    <!--查询购物车是否已经有此种商品-->
+    <select id="exitCart" parameterType="com.xzsd.app.shoppingCart.entity.AddShoppingcartEntity"
+            resultType="java.lang.String">
+        select
+            shipping_no cartCode
+        from
+            t_shopping_cart
+        where
+            is_deleted = 0
+        and
+            user_code = #{userCode}
+        and
+           sku_no = #{goodsCode}
+    </select>
+    <!--新增购物车时更新商品数量-->
+    <update id="updateCartNum" parameterType="com.xzsd.app.shoppingCart.entity.AddShoppingcartEntity">
+        update
+            t_shopping_cart
+        set
+            gmt_modified = now(),
+            last_modified_by = #{userCode},
+            cnt = #{cnt}
+        where
+            user_code = #{userCode}
+        and
+            is_deleted = 0
+        and
+            sku_no = #{goodsCode}
+    </update>
+    <!--查找商品编号-->
+    <select id="queryGoodsCode" parameterType="com.xzsd.app.shoppingCart.entity.AddShoppingcartEntity" resultType="java.lang.String">
+        select
+            sku_no
+        from
+            t_shopping_cart
+        where
+            shipping_no = #{cartCode}
+    </select>
+
+    <!--商品数量修改-->
+
+    <update id="updateCartGood" parameterType="com.xzsd.app.shoppingCart.entity.AddShoppingcartEntity">
+        update
+            t_shopping_cart
+        set
+            gmt_modified = now(),
+            last_modified_by = #{userCode},
+            cnt = #{cnt}
+        where
+            shipping_no = #{cartCode}
+        and
+            is_deleted = 0
+    </update>
+
+    <!--删除购物车对应商品-->
+    <update id="deleteCartGood" parameterType="com.xzsd.app.shoppingCart.entity.AddShoppingcartEntity">
+        update
+            t_shopping_cart
+        set
+            gmt_modified = now(),
+            last_modified_by = #{userCode},
+            is_deleted = 1
+        where
+            is_deleted = 0
+        and
+            shipping_no = #{cartCode}
+    </update>
+
+    <!--批量删除购物车商品-->
+    <update id="deleteCartGoodlist" parameterType="java.lang.String">
+        update
+        t_shopping_cart
+        set
+        is_deleted = 1
+        where
+        shipping_no in
+        <foreach collection="cartCodeList" item="item" open="(" separator="," close=")" index="index">
+            #{item}
+        </foreach>
+
+    </update>
+
+    <!--购物车商品列表查询-->
+
+    <select id="listShoppingCarts" parameterType="com.xzsd.app.shoppingCart.entity.listforEntity" resultType="com.xzsd.app.shoppingCart.entity.CartGoodsListEntity">
+       select
+            a.shipping_no cartCode,
+            a.sku_no goodsCode,
+            b.sku_name goodsName,
+            a.cnt cnt,
+            b.image_code ImageUrl,
+            b.selling_price sellingPrice
+        from
+            t_shopping_cart a,
+            t_sku_information b
+        where
+            a.sku_no = b.sku_no
+        and
+            a.is_deleted = 0
+        and
+            a.user_code = #{userCode}
+    </select>
+</mapper>

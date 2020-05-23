@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xzsd.app.order.dao.OrderDao">
+
+    <!--增加订单-->
+    <insert id="addOrder" parameterType="com.xzsd.app.order.entity.addOrderEntity">
+        INSERT
+        INTO
+        `t_order_management`(
+        `order_no`,
+        `user_code`,
+        `order_status`,
+        `pay_status`,
+        `pay_time`,
+        `create_time`,
+        `create_by`,
+        `is_deleted`,
+        `receiver_no`,
+        `version`
+        )
+        VALUES(
+        #{orderCode},
+        #{userCode},
+        1,
+        1,
+        now(),
+        now(),
+        #{userCode},
+        0,
+        #{shopCode},
+        0
+        )
+        </insert>
+
+    <!--查询哪些商品已下架,或者已删除-->
+
+    <select id="goodsExpired" parameterType="com.xzsd.app.order.entity.addOrderEntity" resultType="com.xzsd.app.order.entity.cartCodelistEntity">
+        select
+        tcart.shipping_no cartCode
+        from
+        t_sku_information tgood,
+        t_shopping_cart tcart
+        where
+        tcart.sku_no = tgood.sku_no
+        and
+        tgood.is_deleted = 0
+        and
+        tgood.sku_state != 1
+        and
+        shipping_no in
+        <foreach collection="list" item="item" open="(" separator="," close=")" index="index">
+            #{item}
+        </foreach>
+    </select>
+
+    <!--判断购物车中的每种商品库存是否充足,如果存在购物车中某一商品数量大于库存，那么返回这个商品编号-->
+    <select id="judgementStock" parameterType="com.xzsd.app.order.entity.addOrderEntity" resultType="com.xzsd.app.order.entity.cartCodelistEntity">
+
+        select
+        tcart.shipping_no goodsCode
+        from
+        t_sku_information tgood,
+        t_shopping_cart tcart
+        where
+        tcart.sku_no = tgood.sku_no
+        and
+        tgood.is_deleted = 0
+        and
+        tcart.shipping_no in
+        <foreach collection="cartCodeList" index="index"  open="(" separator="," close=")"  item="item">
+            #{item}
+        </foreach>
+        and
+        tcart.cnt &gt; tgood.stock
+    </select>
+
+    <!--修改物品数量-->
+
+    <update id="updateGoodNum" parameterType="com.xzsd.app.order.entity.GoodstockEnitiy" >
+        update
+        t_sku_information tgood,
+        t_shopping_cart tcart
+        set
+        tcart.cnt = tgood.stock
+        where
+        tgood.is_deleted = 0
+        and
+        tcart.sku_no = tgood.sku_no
+        and
+        tcart.shipping_no in
+        <foreach collection="list" index="index" open="(" separator="," close=")" item="item">
+            #{item}
+        </foreach>
+    </update>
+
+    <!--查询-->
+
+    <select id="queryOrderList" parameterType="com.xzsd.app.order.entity.addOrderEntity" resultType="com.xzsd.app.order.entity.OrderEntity">
+        select
+        tcart.user_code userCode,
+        tgood.sku_name goodsName,
+        tcart.sku_no goodsCode,
+        tcart.cnt goodsNum,
+        tgood.selling_price goodsPrice
+        from
+        t_sku_information tgood,
+        t_shopping_cart tcart
+        where
+        tcart.shipping_no in
+        <foreach collection="list" index="index" open="(" separator="," close=")" item="item">
+            #{item}
+        </foreach>
+        and
+        tcart.is_deleted = 0
+        and
+        tcart.cnt &gt; 0
+        and
+        tcart.sku_no = tgood.sku_no
+    </select>
+
+
+    <!--订单生成后：更新商品的 售出量  还有 库存量   [商品更新条件: 在售  时间在销售时间范围 没删除 库存足够]-->
+
+    <update id="updateGoodRelative" parameterType="com.xzsd.app.order.entity.OrderEntity">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            update
+            t_sku_information
+            set
+            stock = stock - #{item.goodsNum},
+            sale_cnt = sale_cnt + #{item.goodsNum}
+            where
+            stock &gt; #{item.goodsNum}
+            and
+            is_deleted = 0
+            and
+            sku_state = 1
+            and
+            sku_no = #{item.goodsCode}
+        </foreach>
+    </update>
+
+    <!--清空购物车-->
+    <update id="clearEmpty" parameterType="com.xzsd.app.order.entity.addOrderEntity" >
+        update
+        t_shopping_cart
+        set
+        is_deleted = 1
+        where
+        shipping_no in
+        <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and
+        is_deleted = 0
+    </update>
+
+    <!--订单删除-->
+    <update id="deleteOrder" parameterType="com.xzsd.app.order.entity.OrderEntity">
+        update
+            t_order_management
+        set
+            is_deleted = 1,
+            gmt_modified = now(),
+            last_modified_by = #{createUser}
+        where
+            is_deleted = 0
+        and
+            order_no = #{orderCode}
+    </update>
+
+    <!--新增订单详情表-->
+    <insert id="addOrderList" parameterType="com.xzsd.app.order.entity.OrderEntity" >
+        INSERT
+        INTO
+        `t_order_details`(
+        `order_de_no`,
+        `order_no`,
+        `sku_no`,
+        `goods_cnt`,
+        `goods_price`,
+        `goods_image`,
+        `create_time`,
+        `create_by`,
+        `is_deleted`,
+        `version`
+        )
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+            #{item.orderCode},
+            #{item.orderNo},
+            #{item.goodsCode},
+            #{item.goodsNum},
+            #{item.goodsPrice},
+            #{item.goodsImage},
+            now(),
+            #{item.createUser},
+            0,
+            0
+            )
+        </foreach>
+    </insert>
+    <!--订单编号-->
+    <select id="queryOrderDetail" parameterType="com.xzsd.app.order.entity.OrderDetailEntity" resultType="com.xzsd.app.order.entity.OrderDetailEntity">
+        select
+           torder.order_no orderCode,
+           torder.create_time orderCreateTime,
+           torder.order_status  orderState,
+--            torder.payment_money
+           tstore.store_name deliveryStore,
+           tstore.store_address Address
+        from
+            t_order_management torder,
+            t_customer tbind,
+            t_store_information tstore
+        where
+            torder.order_no = #{orderCode}
+         and
+            tbind.user_code = torder.user_code
+        and
+            tstore.store_invitation = tbind.store_invitation
+         and
+            torder.is_deleted = 0
+    </select>
+
+    <!--根据订单号查询商品-->
+    <select id="querygoodslist" parameterType="java.lang.String" resultType="com.xzsd.app.order.entity.OrderDetailGoodsListEntitiy">
+        select
+            b.sku_no goodsCode,
+            a.sku_name goodsName,
+            a.selling_price goodsSale,
+            a.image_code goodsImageUrl,
+            a.sku_detail goodsdetail,
+            b.goods_cnt goodsNum
+        from
+        t_sku_information a,t_order_details b
+        where
+        b.order_no = #{orderCode}
+        and
+        b.sku_no = a.sku_no
+    </select>
+    <!--通过订单编号，关联商品表和 订单表，订单详情表，找到所有改订单商品的商品和数量-->
+
+    <select id="queryOrderGoodCode" parameterType="java.lang.String" resultType="com.xzsd.app.order.entity.GetGoodsCodeNumEntity">
+        select
+            sku_no goodsCode,
+            goods_cnt goodsNum
+        from
+            t_order_details
+        where
+            order_no = #{orderCode}
+        and
+            is_deleted = 0
+    </select>
+
+    <!--订单已取消的情况下 去恢复对应商品的库存和销售量-->
+    <update id="updateGoodLibSaveAndSaleNum" parameterType="com.xzsd.app.order.entity.GetGoodsCodeNumEntity">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+            update
+            t_sku_information
+            set
+            sale_cnt = sale_cnt - #{item.goodsNum},
+            stock = stock + #{item.goodsNum}
+            where
+            sku_no = #{item.goodsCode}
+        </foreach>
+    </update>
+
+    <!--修改订单状态-->
+    <update id="updateOrder" parameterType="com.xzsd.app.order.entity.UpdateOrderEntitiy">
+          update
+              t_order_management
+          set
+              order_status = #{orderState},
+              last_modified_by = #{updateUser}
+          where
+              order_no = #{orderCode}
+    </update>
+
+    <!--查询用户订单列表-->
+    <select id="queryUserOrderList" parameterType="com.xzsd.app.order.entity.OrderListForEntitiy" resultType="com.xzsd.app.order.entity.OrderListEntity">
+          select
+              order_no orderCode,
+              payment_money payMoney,
+              order_status orderState
+          from
+              t_order_management
+          where
+              user_code = #{userCode}
+          and
+              is_deleted = 0
+        <if test="orderState!=null and orderState !=''">
+            and  order_status = #{orderState}
+        </if>
+    </select>
+
+    <!--根据订单号查询商品-->
+    <select id="querygoods" parameterType="java.lang.String" resultType="com.xzsd.app.order.entity.OrderListUnitEntity">
+        select
+            b.sku_no goodsCode,
+            a.sku_name goodsName,
+            a.selling_price goodsSale,
+            a.image_code goodsImageUrl,
+            a.sku_detail goodsDetail,
+            a.image_code imageUrl,
+            b.goods_cnt goodsNum
+        from
+        t_sku_information a,t_order_details b
+        where
+        b.order_no = #{orderCode}
+        and
+        b.sku_no = a.sku_no
+    </select>
+
+    <!--新增订单商品评价-->
+    <insert id="addOrderGoodsEva" parameterType="com.xzsd.app.order.entity.OrderEvaUnitEntity" >
+        INSERT
+        INTO
+        `t_order_eval`(
+        `order_eval_code`,
+        `sku_no`,
+        `user_code`,
+        `star_level`,
+        `appraise_info`,
+        `create_time`,
+        `is_deleted`,
+        `version`
+        )
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            (
+            #{item.commentCode},
+            #{item.goodCode},
+            #{item.createUser},
+            #{item.goodRank},
+            #{item.evaContent},
+            now(),
+            0,
+            0
+            )
+        </foreach>
+    </insert>
+
+    <!--查看商品是否下架和售空-->
+    <select id="queryIsNullOrExpired" parameterType="com.xzsd.app.order.entity.BuyNowEntity" resultType="com.xzsd.app.order.entity.OrderEntity">
+        select
+         sku_name goodsName,
+         sku_no goodsCode,
+         selling_price goodsPrice,
+         image_code goodsImage
+        from
+          t_sku_information
+        where
+            sku_no = #{goodsCode}
+        and
+            is_deleted  = 0
+        and
+            sku_state = 1
+        and
+            stock &gt;= #{goodsNum}
+    </select>
+
+    <!--快速购买 新增订单-->
+    <insert id="addFastBuyOrder" parameterType="com.xzsd.app.order.entity.BuyNowEntity">
+        INSERT
+            INTO
+              `t_order_management`(
+                `order_no`,
+                `user_code`,
+                `payment_money`,
+                `order_status`,
+                `pay_status`,
+                `receiver_no`,
+                `create_time`,
+                `create_by`,
+                `gmt_modified`,
+                `last_modified_by`,
+                `is_deleted`,
+                `version`
+              )
+            VALUES(
+              #{orderCode},
+              #{userCode},
+              #{orderPrice},
+              1,
+              1,
+              #{shopCode},
+              now(),
+              #{userCode},
+              now(),
+              #{userCode},
+              0,
+              0
+            )
+    </insert>
+
+    <!--更新订单总价格-->
+    <update id="updateOrderCount" parameterType="com.xzsd.app.order.entity.orderPriceEntity">
+        update
+            t_order_management
+        set
+            payment_money = #{price},
+            create_by = #{updateUser},
+            gmt_modified = now()
+        where
+            order_no = #{orderCode}
+    </update>
+
+    <!--查看商品是否下架和售空-->
+    <select id="panduan" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT store_invitation
+            FROM
+            t_customer
+            WHERE
+            user_code = #{userCode}
+    </select>
+
+    <!--根据订单号查询商品-->
+    <select id="listGoodsForEvaluate" parameterType="java.lang.String" resultType="com.xzsd.app.order.entity.goodsListEntity">
+        SELECT
+                a.sku_no goodsCode,
+                a.image_code imageUrl
+        from
+        t_sku_information a,t_order_details b
+        where
+        b.order_no = #{orderCode}
+        and
+        b.sku_no = a.sku_no
+    </select>
+
+    <!--更新每种商品星级数-->
+    <update id="updateGoodRank" parameterType="com.xzsd.app.order.entity.OrderEvaUnitEntity">
+        <foreach collection="list" index="index" item="item" separator=";">
+            update
+            t_sku_information,
+            (select avg(star_level) as rank from t_order_eval where sku_no = '${item.goodCode}' and is_deleted = 0) ranks
+            set
+            order_eva_rank = ROUND(((ranks.rank+#{item.goodRank})/2),1)
+            where
+            sku_no = #{item.goodCode}
+        </foreach>
+    </update>
+
+</mapper>

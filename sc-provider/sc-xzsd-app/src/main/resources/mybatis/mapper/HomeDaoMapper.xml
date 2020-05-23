@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xzsd.app.Homepage.dao.HomeDao">
+
+    <!--轮播图列表-->
+    <select id="queryRotate" resultType="com.xzsd.app.Homepage.entity.RotaImageEntity">
+        select
+            banner_code bannerCode,
+            ins ins,
+            sku_no skuNo,
+            image_url imageUrl
+        from
+            t_carousel
+        where
+            is_deleted = 0
+        and
+            start_time &lt;= now()
+        and
+            end_time &gt;= now()
+    </select>
+
+    <!--轮播图更新-->
+    <update id="deletenoCode" parameterType="com.xzsd.app.Homepage.entity.RotaImageEntity">
+        update
+        t_carousel
+        set
+        is_deleted = 1,
+        gmt_modified = now(),
+        last_modified_by   = 'admin',
+        version = version + 1
+        where
+        is_deleted = 0
+        and
+        banner_code not in
+        <foreach collection="list" index="index" close=")" separator="," open="(" item="item">
+            #{item}
+        </foreach>
+
+    </update>
+
+    <!--查询热门商品列表-->
+    <select id="queryHotGoodsList" resultType="com.xzsd.app.Homepage.entity.HotGoods">
+
+         select
+            b.sku_no goodsCode,
+            b.sku_name goodsName,
+            b.image_code imageCode,
+            a.pop_sort Sort,
+            b.selling_price sellingPrice
+        from
+            t_popular_products a,
+            t_sku_information b
+        where
+            a.is_deleted = 0
+        and
+            a.sku_no = b.sku_no
+        limit 0,#{num}
+    </select>
+
+    <!--查询展示数量-->
+
+    <select id="queryNum" resultType="int">
+        SELECT
+            show_num
+        FROM
+            t_show_num
+        ORDER BY show_code desc
+        LIMIT 0,1
+    </select>
+
+</mapper>
